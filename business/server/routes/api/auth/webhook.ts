@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
     switch (w?.type) {
       case userTypes.created:
         console.log(w.data);
-        return { data: w.data };
+        return { data: JSON.stringify(w.data) };
 
       default:
         return "Nothing to see here";

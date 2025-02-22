@@ -10,7 +10,7 @@ const client = jwksClient({
 
 export default defineEventHandler(async (event) => {
   try {
-    // assertMethod(event, "POST");
+    assertMethod(event, "POST");
     if (handleCors(event, { origin: "*" })) return;
 
     const contentType = getRequestHeader(event, "content-type");

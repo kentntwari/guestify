@@ -1,6 +1,7 @@
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
+import { H3Error } from "h3";
 
 import { user as userTypes } from "@/constants/webhooks";
 
@@ -20,21 +21,21 @@ export default defineEventHandler(async (event) => {
         statusMessage: "Not acceptable",
       });
 
-    const token = await readValidatedBody(event, (body) =>
-      typeof body !== "string" ? z.coerce.string().parse(body) : body
-    );
-    const decoded = jwt.decode(token, { complete: true });
+    const token = await readRawBody(event);
+    console.log(token);
+    return null;
+    // const decoded = jwt.decode(token, { complete: true });
 
-    if (!decoded)
-      throw createError({ statusCode: 404, statusMessage: "Invalid token" });
+    // if (!decoded)
+    //   throw createError({ statusCode: 404, statusMessage: "Invalid token" });
 
-    const { kid } = decoded.header;
-    const key = await client.getSigningKey(kid);
-    const signingKey = key.getPublicKey();
+    // const { kid } = decoded.header;
+    // const key = await client.getSigningKey(kid);
+    // const signingKey = key.getPublicKey();
 
-    const w = await jwt.verify(token, signingKey);
+    // const w = await jwt.verify(token, signingKey);
 
-    return { data: JSON.stringify(w) };
+    // return { data: JSON.stringify(w) };
 
     // if (typeof w === "string")
     //   throw createError({
@@ -53,6 +54,6 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     //Must throw webhook error
     console.log("WEBHOOK");
-    console.log(error);
+    if (error instanceof H3Error) console.log(error.stack);
   }
 });

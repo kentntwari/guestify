@@ -43,9 +43,10 @@ export default defineEventHandler(async (event) => {
     switch (w?.type) {
       case userTypes.created:
         console.log(w.data);
-        break;
+        return { data: w.data };
 
       default:
+        return "Nothing to see here";
         break;
     }
   } catch (error) {

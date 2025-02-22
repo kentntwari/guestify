@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
     return sendRedirect(event, loginUrl.toString());
   } catch (error) {
     //Must throw auth error
+    console.log("LOGIN ERROR");
     console.log(error);
   }
 });

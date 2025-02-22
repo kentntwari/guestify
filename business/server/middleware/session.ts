@@ -12,17 +12,16 @@ declare module "h3" {
 const SESSION_KEY = "kinde";
 
 export default defineEventHandler(async (event) => {
-  const sessionId = getCookie(event, SESSION_KEY) || nanoid();
+  const sessionId = getCookie(event, SESSION_KEY) || nanoid(60);
   const sessionManager = new RedisBasedSessionManager(redis, sessionId);
 
   event.context.session = sessionManager;
 
-  // if (!getCookie(event, SESSION_KEY)) {
-  //   setCookie(event, SESSION_KEY, sessionId, {
-  //     httpOnly: true,
-  //     secure: true,
-  //     sameSite: "lax",
-  //     maxAge: 60 * 60 * 24 * 7, // 1 week
-  //   });
-  // }
+  if (!getCookie(event, SESSION_KEY)) {
+    setCookie(event, SESSION_KEY, sessionId, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+    });
+  }
 });

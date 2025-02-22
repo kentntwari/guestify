@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
     return sendRedirect(event, registerUrl.toString());
   } catch (error) {
     //muast throw auth error
+    console.log("REGISTER ERROR");
     console.log(error);
   }
 });

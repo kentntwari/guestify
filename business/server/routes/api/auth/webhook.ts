@@ -42,8 +42,7 @@ export default defineEventHandler(async (event) => {
 
     switch (w?.type) {
       case userTypes.created:
-        console.log(w.data);
-        return { data: JSON.stringify(w.data) };
+        return { data: JSON.stringify(w) };
 
       default:
         return "Nothing to see here";
@@ -51,6 +50,7 @@ export default defineEventHandler(async (event) => {
     }
   } catch (error) {
     //Must throw webhook error
+    console.log("WEBHOOK")
     console.log(error);
   }
 });

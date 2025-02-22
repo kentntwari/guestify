@@ -34,23 +34,25 @@ export default defineEventHandler(async (event) => {
 
     const w = await jwt.verify(token, signingKey);
 
-    if (typeof w === "string")
-      throw createError({
-        statusCode: 404,
-        statusMessage: "Invalid webhook type",
-      });
+    return { data: JSON.stringify(w) };
 
-    switch (w?.type) {
-      case userTypes.created:
-        return { data: JSON.stringify(w) };
+    // if (typeof w === "string")
+    //   throw createError({
+    //     statusCode: 404,
+    //     statusMessage: "Invalid webhook type",
+    //   });
 
-      default:
-        return "Nothing to see here";
-        break;
-    }
+    // switch (w?.type) {
+    //   case userTypes.created:
+    //     return { data: JSON.stringify(w) };
+
+    //   default:
+    //     return "Nothing to see here";
+    //     break;
+    // }
   } catch (error) {
     //Must throw webhook error
-    console.log("WEBHOOK")
+    console.log("WEBHOOK");
     console.log(error);
   }
 });

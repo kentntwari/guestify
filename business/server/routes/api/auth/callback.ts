@@ -1,4 +1,5 @@
 import { kindeClient } from "@/lib/kinde";
+import { CallbackError } from "@/entities/errors/auth";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -6,7 +7,6 @@ export default defineEventHandler(async (event) => {
     await kindeClient.handleRedirectToApp(event.context.session, url);
     return sendRedirect(event, "/");
   } catch (error) {
-    // throw callback error
-    console.log("CALLBACK ERROR");
+    throw new CallbackError();
   }
 });

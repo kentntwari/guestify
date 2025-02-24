@@ -1,9 +1,15 @@
+import {
+  WebhookEventType,
+  UserCreatedWebhookEvent,
+  UserDeletedWebhookEvent,
+} from "@/types/kinde/webhooks";
+
 import { z } from "zod";
+import { H3Error } from "h3";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
-import { H3Error } from "h3";
-
-import { user as userTypes } from "@/constants/webhooks";
+import { KindeWebhookError } from "@/entities/errors/webhooks";
+import { UserService } from "@/services/user";
 
 const client = jwksClient({
   jwksUri: `${process.env.KINDE_AUTH_DOMAIN}/.well-known/jwks.json`,
@@ -15,45 +21,65 @@ export default defineEventHandler(async (event) => {
     if (handleCors(event, { origin: "*" })) return;
 
     const contentType = getRequestHeader(event, "content-type");
+
     if (contentType !== "application/jwt")
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Not acceptable",
-      });
+      throw new KindeWebhookError({ webhooktype: undefined }, contentType);
 
-    const token = await readRawBody(event);
-    console.log(token);
-    return null;
-    // const decoded = jwt.decode(token, { complete: true });
+    let parsedToken: string;
+    const token = await readRawBody(event, "utf-8");
+    if (Buffer.isBuffer(token)) parsedToken = token.toString();
+    else if (typeof token === "string") parsedToken = token;
+    else
+      throw new KindeWebhookError(
+        { webhooktype: undefined, token: z.coerce.string().parse(token) },
+        contentType
+      );
 
-    // if (!decoded)
-    //   throw createError({ statusCode: 404, statusMessage: "Invalid token" });
+    // TODO: use kinde decode library(@kinde/webhooks) instead
+    const decoded = jwt.decode(parsedToken, { complete: true });
 
-    // const { kid } = decoded.header;
-    // const key = await client.getSigningKey(kid);
-    // const signingKey = key.getPublicKey();
+    if (!decoded)
+      throw new KindeWebhookError(
+        { webhooktype: undefined, token: z.coerce.string().parse(token) },
+        contentType
+      );
 
-    // const w = await jwt.verify(token, signingKey);
+    const { kid } = decoded.header;
+    const key = await client.getSigningKey(kid);
+    const signingKey = key.getPublicKey();
 
-    // return { data: JSON.stringify(w) };
+    const w = await jwt.verify(token, signingKey);
 
-    // if (typeof w === "string")
-    //   throw createError({
-    //     statusCode: 404,
-    //     statusMessage: "Invalid webhook type",
-    //   });
+    if (typeof w === "string")
+      throw new KindeWebhookError({ webhooktype: undefined }, contentType);
 
-    // switch (w?.type) {
-    //   case userTypes.created:
-    //     return { data: JSON.stringify(w) };
+    switch (w?.type) {
+      case WebhookEventType.userCreated:
+        const { data: userCreatedPayload } = w as UserCreatedWebhookEvent;
+        new UserService().createUser({
+          email: userCreatedPayload.user.email,
+          id: userCreatedPayload.user.id,
+          firstName: userCreatedPayload.user.first_name,
+          lastName: userCreatedPayload.user.last_name,
+        });
+        break;
 
-    //   default:
-    //     return "Nothing to see here";
-    //     break;
-    // }
+      case WebhookEventType.userDeleted:
+        const { data: userDeletedPayload } = w as UserDeletedWebhookEvent;
+        new UserService().deleteUser(userDeletedPayload.user.id);
+        break;
+
+      default:
+        throw new KindeWebhookError(
+          { webhooktype: z.coerce.string().parse(w?.type) },
+          contentType
+        );
+    }
+
+    return sendNoContent(event, 200);
   } catch (error) {
-    //Must throw webhook error
-    console.log("WEBHOOK");
-    if (error instanceof H3Error) console.log(error.stack);
+    //TODO: log error
+    //FIX: Better error handling
+    return { success: false, isError: true };
   }
 });

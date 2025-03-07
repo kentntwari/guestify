@@ -17,9 +17,13 @@ export class KindeWebhookError
 
   constructor(
     { webhooktype, token }: IncomingWebhookParams,
-    contentType: string | undefined | null
+    contentType: string | undefined | null,
+    data?: {}
   ) {
     super("KINDE WEBHOOK ERROR");
+
+    this.data = data;
+
     this.webhooktype = webhooktype;
     this.webhooktoken = token;
 

@@ -1,29 +1,44 @@
 import { Prisma } from "@prisma/client";
 import { H3Error } from "h3";
 
-interface IUserActions {
-  action: "CREATE" | "UPDATE" | "DELETE";
-}
+type TServices = "USER" | "EVENT";
+type TServiceActions = "CREATE" | "UPDATE" | "DELETE";
 
-export class UserServiceError extends H3Error {
-  public action: IUserActions["action"];
+export class ServiceError extends H3Error {
+  public service: TServices;
+  public action: TServiceActions;
   public misc: {};
 
   constructor(
-    serviceAction: IUserActions["action"],
+    service: TServices,
+    serviceAction: TServiceActions,
     rawError:
       | Prisma.PrismaClientKnownRequestError
       | Prisma.PrismaClientUnknownRequestError
       | Prisma.PrismaClientRustPanicError
-      | any,
+      | unknown,
     misc?: {}
   ) {
-    super("USER SERVICE ERROR");
+    super(service + "SERVICE ERROR");
 
+    this.service = service;
     this.action = serviceAction;
     this.misc = misc ?? {};
 
+    this.handlePrismaError(rawError);
+  }
+
+  private handlePrismaError(rawError: unknown) {
     switch (true) {
+      case rawError instanceof Prisma.PrismaClientInitializationError:
+        this.statusCode = 500;
+        this.statusMessage = "Prisma Error";
+        this.cause = {
+          code: rawError.errorCode,
+          message: rawError.message,
+        };
+        break;
+
       case rawError instanceof Prisma.PrismaClientKnownRequestError:
         this.statusCode = 400;
         this.statusMessage = "Prisma Error";
@@ -50,26 +65,14 @@ export class UserServiceError extends H3Error {
         };
         break;
 
-      case rawError instanceof Prisma.PrismaClientInitializationError:
-        this.statusCode = 500;
-        this.statusMessage = "Prisma Error";
-        this.cause = {
-          code: rawError.errorCode,
-          message: rawError.message,
-        };
-        break;
-
       default:
-        this.statusMessage = "Something went wrong";
-        if ("message" in rawError)
-          this.cause = {
-            message: rawError.message,
-          };
-        break;
+        this.statusCode = 500;
+        this.statusMessage = "Unknown Error";
+        this.cause = {
+          message: "An unexpected error occurred during service operation",
+          originalError:
+            rawError instanceof Error ? rawError.message : String(rawError),
+        };
     }
-  }
-
-  set statusCode(status: number) {
-    this.statusCode = status;
   }
 }

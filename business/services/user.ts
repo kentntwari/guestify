@@ -1,30 +1,54 @@
 import { PrismaClient } from "@prisma/client";
 import { TUserSchema } from "@/entities/data/users";
-import { UserServiceError } from "@/entities/errors/services";
+import { NetworkError } from "@/entities/errors/network";
+import { ServiceError } from "@/entities/errors/services";
 
 import { prisma } from "@/lib/prisma";
-import { db_createUser, db_deleteUser } from "@/utils/db";
 
 export class UserService {
-  private db: PrismaClient;
+  private _db: PrismaClient;
+  private _dbInitialized: boolean = false;
 
   constructor(db: PrismaClient = prisma) {
-    this.db = db;
+    this._db = db;
   }
 
-  async createUser(user: TUserSchema) {
+  async prepareDb() {
     try {
-      await db_createUser(this.db, user);
+      if (this._dbInitialized) return this._db;
+
+      await this._db.$connect();
+      this._dbInitialized = true;
+
+      return this._db;
     } catch (error) {
-      throw new UserServiceError("CREATE", error, { input: user });
+      throw new NetworkError("Failed to prepare database connection.", 500);
     }
   }
 
-  async deleteUser(id: TUserSchema["id"]) {
+  async create(user: TUserSchema) {
     try {
-      await db_deleteUser(this.db, id);
+      return (await this.prepareDb()).user.create({
+        data: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      });
     } catch (error) {
-      throw new UserServiceError("DELETE", error, { data: { id } });
+      if (error instanceof NetworkError) throw error;
+      throw new ServiceError("USER", "CREATE", error, { input: user });
+    }
+  }
+
+  async delete(id: TUserSchema["id"]) {
+    try {
+      return (await this.prepareDb()).user.delete({
+        where: { id },
+      });
+    } catch (error) {
+      throw new ServiceError("USER", "DELETE", error, { data: { id } });
     }
   }
 }

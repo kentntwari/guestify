@@ -1,16 +1,34 @@
-import { kindeClient } from "@/lib/kinde";
+import { TApiResponse } from "@/utils/zschemas";
+
+import { KindeWebhookService } from "@/services/webhook";
+import { ApiError } from "@/entities/errors/api";
+import { NetworkError } from "@/entities/errors/network";
+import { ApplicationError } from "@/entities/errors/application";
 
 export default defineEventHandler(async (event) => {
-  const isAuthenticated = await kindeClient.isAuthenticated(
-    event.context.session
-  );
+  try {
+    const isAuthenticated = await new KindeWebhookService(
+      event
+    ).isAuthenticated();
 
-  if (!isAuthenticated) return { isAuthenticated: false };
+    return {
+      isAuthenticated,
+      error: false,
+      errorType: null,
+    } satisfies TApiResponse;
+  } catch (error) {
+    if (error instanceof NetworkError)
+      return {
+        error: true,
+        errorType: "NetworkError",
+      } satisfies TApiResponse;
 
-  const profile = await kindeClient.getUserProfile(event.context.session);
+    if (error instanceof ApplicationError)
+      return {
+        error: true,
+        errorType: "ApplicationError",
+      } satisfies TApiResponse;
 
-  return {
-    isAuthenticated,
-    profile,
-  };
+    throw new ApiError("USER", error);
+  }
 });

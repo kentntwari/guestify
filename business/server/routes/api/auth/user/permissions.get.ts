@@ -1,13 +1,33 @@
-import { kindeClient } from "@/lib/kinde";
+import type { TApiResponse } from "@/utils/zschemas";
+
+import { KindeWebhookService } from "@/services/webhook";
+import { ApiError } from "@/entities/errors/api";
+import { NetworkError } from "@/entities/errors/network";
+import { ApplicationError } from "@/entities/errors/application";
 
 export default defineEventHandler(async (event) => {
-  const isAuthenticated = await kindeClient.isAuthenticated(
-    event.context.session
-  );
+  try {
+    const service = await new KindeWebhookService(event).getAllPermissions();
+    return {
+      permissions: service ? service.permissions : null,
+      error: false,
+      errorType: null,
+    } satisfies TApiResponse;
+  } catch (error) {
+    if (error instanceof NetworkError)
+      return {
+        permissions: null,
+        error: true,
+        errorType: "NetworkError",
+      } satisfies TApiResponse;
 
-  if (!isAuthenticated) return null;
+    if (error instanceof ApplicationError)
+      return {
+        permissions: null,
+        error: true,
+        errorType: "ApplicationError",
+      } satisfies TApiResponse;
 
-  const permissions = await kindeClient.getPermissions(event.context.session);
-
-  return permissions;
+    throw new ApiError("PERMISSIONS", error);
+  }
 });

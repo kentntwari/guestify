@@ -14,30 +14,65 @@ import { KindeWebhookError } from "@/entities/errors/webhooks";
 import { ApplicationError } from "@/entities/errors/application";
 import { RedisBasedSessionManager } from "@/utils/sessionManager";
 
-export class KindeWebhookService {
-  private _event: H3Event;
-  private _session: RedisBasedSessionManager;
-  private _kindeWebhookToken: string | undefined;
-  private _kindeWebhookContentType: string | undefined;
-  private _kindeWebhookTokenDecoded: jwt.Jwt | null = null;
-  private _kindeWebhookSigningKey: jwksClient.SigningKey | undefined;
-  private _kindeWebhookType: WebhookEventType | undefined;
-  private _kindeWebhookPayload: jwt.JwtPayload | string | undefined;
-  private _kindeWebhookJwksClient: jwksClient.JwksClient;
+abstract class BaseWebhookService {
+  private readonly _event: H3Event;
+  private readonly _session: RedisBasedSessionManager;
 
-  private _kindeClient: typeof kindeClient;
-  private _kindeClientInitialized: boolean = false;
-
-  constructor(event: H3Event, kinde: typeof kindeClient = kindeClient) {
+  constructor(event: H3Event) {
     this._event = event;
     this._session = this._event.context.session;
+  }
+
+  protected get session() {
+    return this._session;
+  }
+
+  protected getContentType() {
+    const contentType = getRequestHeader(this._event, "content-type");
+    if (contentType !== "application/jwt")
+      throw new KindeWebhookError({ webhooktype: undefined }, contentType);
+    return contentType;
+  }
+
+  protected async getToken() {
+    const token = await readRawBody(this._event, "utf-8");
+
+    if (Buffer.isBuffer(token)) token.toString();
+    else if (typeof token === "string") token;
+    else
+      throw new KindeWebhookError(
+        {
+          webhooktype: undefined,
+          token: z.coerce.string().parse(token),
+        },
+        this.getContentType()
+      );
+
+    return token;
+  }
+
+  public abstract isAuthenticated(): Promise<boolean>;
+}
+
+export class KindeWebhookService extends BaseWebhookService {
+  private _kindeClient: typeof kindeClient;
+  private _kindeClientInitialized: boolean = false;
+  protected _kindeWebhookTokenDecoded: jwt.Jwt | null = null;
+  protected _kindeWebhookSigningKey: jwksClient.SigningKey | undefined;
+  protected _kindeWebhookType: WebhookEventType | undefined;
+  protected _kindeWebhookPayload: jwt.JwtPayload | string | undefined;
+  protected _kindeWebhookJwksClient: jwksClient.JwksClient;
+
+  constructor(event: H3Event, kinde: typeof kindeClient = kindeClient) {
+    super(event);
+
     this._kindeClient = kinde;
     this._kindeWebhookJwksClient = jwksClient({
       jwksUri: `${process.env.KINDE_AUTH_DOMAIN}/.well-known/jwks.json`,
     });
   }
 
-  private async prepare() {
+  protected async prepare() {
     try {
       if (this._kindeClientInitialized) return this._kindeClient;
 
@@ -46,7 +81,7 @@ export class KindeWebhookService {
       return this._kindeClient;
     } catch (error) {
       throw new NetworkError("Unable to initialize kinde client", 500, {
-        session: this._session,
+        session: super.session,
         isKindeInitialized: this._kindeClientInitialized,
         rawError: error,
       });
@@ -55,10 +90,10 @@ export class KindeWebhookService {
 
   public async isAuthenticated() {
     try {
-      return (await this.prepare()).isAuthenticated(this._session);
+      return (await this.prepare()).isAuthenticated(super.session);
     } catch (error) {
       throw new ApplicationError("Unable to check authentication", 500, true, {
-        session: this._session,
+        session: super.session,
         isKindeInitialized: this._kindeClientInitialized,
         rawError: error,
       });
@@ -67,14 +102,14 @@ export class KindeWebhookService {
 
   public async getUserProfile() {
     try {
-      return (await this.prepare()).getUserProfile(this._session);
+      return (await this.prepare()).getUserProfile(super.session);
     } catch (error) {
       throw new ApplicationError(
         "An error occured while retrieving the user profile",
         500,
         true,
         {
-          session: this._session,
+          session: super.session,
           isKindeInitialized: this._kindeClientInitialized,
           rawError: error,
         }
@@ -85,18 +120,19 @@ export class KindeWebhookService {
   public async getAllPermissions() {
     try {
       const prepared = await this.prepare();
-      const isAuthenticated = await prepared.isAuthenticated(this._session);
+      const isAuthenticated = await prepared.isAuthenticated(super.session);
 
       if (!isAuthenticated) return null;
 
-      return prepared.getPermissions(this._event.context.session);
+      return prepared.getPermissions(super.session);
     } catch (error) {
+      if (error instanceof NetworkError) throw error;
       throw new ApplicationError(
         "An error occured while retrieving permissions",
         500,
         false,
         {
-          session: this._session,
+          session: super.session,
           isKindeInitialized: this._kindeClientInitialized,
           rawError: error,
         }
@@ -104,49 +140,19 @@ export class KindeWebhookService {
     }
   }
 
-  public getWebhookContentType() {
-    this._kindeWebhookContentType = getRequestHeader(
-      this._event,
-      "content-type"
-    );
-    if (this._kindeWebhookContentType !== "application/jwt")
-      throw new KindeWebhookError(
-        { webhooktype: undefined },
-        this._kindeWebhookContentType
-      );
-    return this._kindeWebhookContentType;
-  }
+  protected async getDecodedToken() {
+    const rawToken = await super.getToken();
 
-  private async getToken() {
-    this._kindeWebhookToken = await readRawBody(this._event, "utf-8");
-
-    if (Buffer.isBuffer(this._kindeWebhookToken))
-      this._kindeWebhookToken.toString();
-    else if (typeof this._kindeWebhookToken === "string")
-      this._kindeWebhookToken;
-    else
+    if (!rawToken)
       throw new KindeWebhookError(
         {
           webhooktype: undefined,
-          token: z.coerce.string().parse(this._kindeWebhookToken),
+          token: z.coerce.string().parse(rawToken),
         },
-        this.getWebhookContentType()
+        super.getContentType()
       );
 
-    return this._kindeWebhookToken;
-  }
-
-  private getDecodedToken() {
-    if (!this._kindeWebhookToken)
-      throw new KindeWebhookError(
-        {
-          webhooktype: undefined,
-          token: z.coerce.string().parse(this._kindeWebhookToken),
-        },
-        this.getWebhookContentType()
-      );
-
-    this._kindeWebhookTokenDecoded = jwt.decode(this._kindeWebhookToken, {
+    this._kindeWebhookTokenDecoded = jwt.decode(rawToken, {
       complete: true,
     });
 
@@ -154,9 +160,13 @@ export class KindeWebhookService {
       throw new KindeWebhookError(
         {
           webhooktype: undefined,
-          token: z.coerce.string().parse(this._kindeWebhookTokenDecoded),
+          token: rawToken,
         },
-        this.getWebhookContentType()
+        super.getContentType(),
+        {
+          details: "Expected valid JWT decoded token, got invalid token",
+          decodedToken: z.coerce.string().parse(this._kindeWebhookTokenDecoded),
+        }
       );
 
     return this._kindeWebhookTokenDecoded;
@@ -164,17 +174,18 @@ export class KindeWebhookService {
 
   private async getSigningKey() {
     try {
-      const { kid } = this.getDecodedToken().header;
+      const { kid } = (await this.getDecodedToken()).header;
       this._kindeWebhookSigningKey =
         await this._kindeWebhookJwksClient.getSigningKey(kid);
       return this._kindeWebhookSigningKey.getPublicKey();
     } catch (error) {
+      if (error instanceof KindeWebhookError) throw error;
       throw new ApplicationError(
         "An error occured while retrieving the signing key",
         500,
         true,
         {
-          session: this._session,
+          session: super.session,
           isKindeInitialized: this._kindeClientInitialized,
           decodedToken: z.coerce.string().parse(this._kindeWebhookTokenDecoded),
           rawError: error,
@@ -185,18 +196,18 @@ export class KindeWebhookService {
 
   public async getWebhookPayload() {
     try {
-      this._kindeWebhookPayload = jwt.verify(
-        await this.getToken(),
-        await this.getSigningKey()
-      );
+      const rawToken = await super.getToken();
+      const signingKey = await this.getSigningKey();
+
+      this._kindeWebhookPayload = jwt.verify(rawToken, signingKey);
 
       if (typeof this._kindeWebhookPayload === "string")
         throw new KindeWebhookError(
           {
             webhooktype: undefined,
-            token: z.coerce.string().parse(this._kindeWebhookToken),
+            token: z.coerce.string().parse(rawToken),
           },
-          this.getWebhookContentType(),
+          super.getContentType(),
           {
             details: "Expected webhook payload but received string",
             payload: this._kindeWebhookPayload,
@@ -215,7 +226,7 @@ export class KindeWebhookService {
         500,
         true,
         {
-          session: this._session,
+          session: super.session,
           isKindeInitialized: this._kindeClientInitialized,
           decodedToken: z.coerce.string().parse(this._kindeWebhookTokenDecoded),
           signingKey: this._kindeWebhookSigningKey,
@@ -235,8 +246,8 @@ export class KindeWebhookService {
       }
 
       throw new KindeWebhookError(
-        { webhooktype: undefined, token: this._kindeWebhookToken },
-        this.getWebhookContentType(),
+        { webhooktype: undefined },
+        super.getContentType(),
         {
           details: 'unable to find "type"  property in payload',
           decodedToken: z.coerce.string().parse(this._kindeWebhookTokenDecoded),
@@ -252,7 +263,7 @@ export class KindeWebhookService {
         500,
         true,
         {
-          session: this._session,
+          session: super.session,
           isKindeInitialized: this._kindeClientInitialized,
           decodedToken: z.coerce.string().parse(this._kindeWebhookTokenDecoded),
           signingKey: this._kindeWebhookSigningKey,

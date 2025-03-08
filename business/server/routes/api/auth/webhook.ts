@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { KindeWebhookError } from "@/entities/errors/webhooks";
 import { UserService } from "@/services/user";
-import { KindeWebhookService } from "@/services/webhook";
+import { KindeWebhookService } from "@/services/webhook.kinde";
 import { ApiError } from "@/entities/errors/api";
 import { NetworkError } from "@/entities/errors/network";
 import { ApplicationError } from "@/entities/errors/application";
@@ -21,8 +21,6 @@ export default defineEventHandler(async (event) => {
     const kindeWebhookService = new KindeWebhookService(event);
     const webhookType = await kindeWebhookService.getWebhookType();
     const webhookPayload = await kindeWebhookService.getWebhookPayload();
-    const webhookContentType =
-      await kindeWebhookService.getWebhookContentType();
 
     const { data: payload } = webhookPayload;
 
@@ -43,7 +41,7 @@ export default defineEventHandler(async (event) => {
       default:
         throw new KindeWebhookError(
           { webhooktype: z.coerce.string().parse(webhookType) },
-          webhookContentType
+          getRequestHeader(event, "content-type")
         );
     }
 

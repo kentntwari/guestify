@@ -1,6 +1,6 @@
 import type { TApiResponse } from "@/utils/zschemas";
 
-import { KindeWebhookService } from "@/services/webhook";
+import { KindeWebhookService } from "@/services/webhook.kinde";
 import { ApiError } from "@/entities/errors/api";
 import { NetworkError } from "@/entities/errors/network";
 import { ApplicationError } from "@/entities/errors/application";

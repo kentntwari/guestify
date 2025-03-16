@@ -1,9 +1,9 @@
 import { H3Error } from "h3";
 
 export class CallbackError extends H3Error {
-  constructor() {
+  constructor(error: unknown) {
     super("CALLBACK ERROR");
-
+    this.data = { error };
     this.statusCode = 500;
   }
 }

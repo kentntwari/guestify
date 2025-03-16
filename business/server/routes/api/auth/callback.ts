@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   try {
     const url = getRequestURL(event);
     await kindeClient.handleRedirectToApp(event.context.session, url);
-    return sendNoContent(event, 204);
+    return sendRedirect(event, "/");
   } catch (error) {
     throw new CallbackError();
   }

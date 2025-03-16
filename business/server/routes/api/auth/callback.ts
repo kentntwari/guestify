@@ -7,6 +7,6 @@ export default defineEventHandler(async (event) => {
     await kindeClient.handleRedirectToApp(event.context.session, url);
     return sendRedirect(event, url.toString());
   } catch (error) {
-    throw new CallbackError();
+    throw new CallbackError(error);
   }
 });

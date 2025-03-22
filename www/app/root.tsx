@@ -1,3 +1,12 @@
+import { rootAuthLoader } from "@clerk/react-router/ssr.server";
+import {
+  ClerkProvider,
+  SignedIn,
+  SignedOut,
+  UserButton,
+  SignInButton,
+} from "@clerk/react-router";
+
 import {
   isRouteErrorResponse,
   Links,
@@ -5,6 +14,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -24,6 +34,8 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
   return (
     <html lang="en">
       <head>
@@ -32,7 +44,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body>
+      <body
+        className={`${
+          location.pathname === "/" ? "bg-primary-900" : "bg-app"
+        } min-h-screen min-h-[100dvh]`}
+      >
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -41,8 +57,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
-  return <Outlet />;
+export async function loader(args: Route.LoaderArgs) {
+  return rootAuthLoader(args);
+}
+
+export default function App({ loaderData }: Route.ComponentProps) {
+  return (
+    <ClerkProvider
+      loaderData={loaderData}
+      signUpFallbackRedirectUrl="/"
+      signInFallbackRedirectUrl="/"
+    >
+      <Outlet />
+    </ClerkProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

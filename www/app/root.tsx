@@ -1,11 +1,5 @@
 import { rootAuthLoader } from "@clerk/react-router/ssr.server";
-import {
-  ClerkProvider,
-  SignedIn,
-  SignedOut,
-  UserButton,
-  SignInButton,
-} from "@clerk/react-router";
+import { ClerkProvider } from "@clerk/react-router";
 
 import {
   isRouteErrorResponse,
@@ -65,6 +59,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
   return (
     <ClerkProvider
       loaderData={loaderData}
+      // TODO: dynamically redirect depending on last hit url
       signUpFallbackRedirectUrl="/"
       signInFallbackRedirectUrl="/"
     >

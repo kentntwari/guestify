@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { useNavigate } from "react-router";
 
 import { ImageKitResources } from "entities/images";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/react-router";
 
 const kit = new ImageKitResources();
 
@@ -67,12 +68,9 @@ export default function Home() {
                 time, and enjoy a seamless experience.
               </p>
 
-              <Link
-                to={{ pathname: "/events" }}
-                className="w-fit flex items-center justify-center bg-primary-500 min-w-[20rem] h-[4rem] px-3 rounded-full uppercase font-semibold text-xl text-black"
-              >
-                Get started for free
-              </Link>
+              <SignedOut>
+                <SignInButton />
+              </SignedOut>
             </div>
           </div>
         </header>

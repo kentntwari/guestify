@@ -27,8 +27,6 @@ export class UnkeyApiClient {
         },
       });
 
-      console.log(res);
-
       const parsed = verifyUnkeyResponseSchema.safeParse(res);
 
       if (!parsed.success)
@@ -43,7 +41,8 @@ export class UnkeyApiClient {
 
       return { success: true, error: null, data: parsed.data };
     } catch (error) {
-      console.log(error);
+      console.log("verify unkey error", error);
+
       return {
         success: false,
         error:

@@ -1,33 +1,61 @@
-import type { TUserCreateSchema } from "@/utils/schemas.zod";
+import { destr } from "destr";
+
+import { Base as BaseService } from "./_base";
 import { UserRepository } from "@/repositories/user";
 import { ApplicationError } from "@/errors/application";
 import { DatabaseError } from "@/errors/database";
+import { UserFactory, UserFactoryError } from "@/factory/user";
 
-export class UserService {
+export class UserService extends BaseService<UserServiceError> {
   private _userRepository: UserRepository;
 
   constructor(repository: UserRepository = new UserRepository()) {
+    super();
     this._userRepository = repository;
   }
 
-  async create(user: TUserCreateSchema) {
+  async create(unknownUser: unknown) {
     try {
-      return await this._userRepository.create({
-        ...user,
-      });
+      return await this._userRepository.create(
+        UserFactory.create(destr(unknownUser))
+      );
     } catch (error) {
-      if (error instanceof DatabaseError)
+      throw this.mapErrorResponse(
+        error,
+        "unknow error occured during user creation"
+      );
+    }
+  }
+
+  public mapErrorResponse(
+    error: unknown,
+    errorMessage: string | undefined = undefined
+  ) {
+    switch (true) {
+      case error instanceof DatabaseError:
         throw new UserServiceError("User creation failed", 500, {
           rawError: error,
           resolution:
             "Please check the database actions and make sure the user is valid",
         });
 
-      throw new UserServiceError(
-        "unknow error occured during user creation",
-        500,
-        { rawError: error }
-      );
+      case error instanceof UserFactoryError:
+        throw new UserServiceError("User creation failed", 422, {
+          rawError: error,
+          user: error.data,
+          resolution:
+            "Please check user data and make sure it is valid according to requirements",
+        });
+
+      default:
+        throw new UserServiceError(
+          !errorMessage ? "Unknown error occured" : errorMessage,
+          500,
+          {
+            rawError: error,
+            resolution: "Please check the error and try again",
+          }
+        );
     }
   }
 }

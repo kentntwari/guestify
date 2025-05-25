@@ -1,7 +1,6 @@
 import { H3Event } from "h3";
-import { z } from "zod";
 
-import { apiResponseSchema } from "@/utils/schemas.zod";
+import { type TApiResponseSchema } from "@/utils/schemas.zod";
 
 export abstract class Base {
   protected _nitroEvent: H3Event;
@@ -20,7 +19,11 @@ export abstract class Base {
     return this._httpRequest;
   }
 
+  public abstract get(...params: any): Promise<TApiResponseSchema | void>;
+  public abstract create(...params: any): Promise<TApiResponseSchema | void>;
+  public abstract update(...params: any): Promise<TApiResponseSchema | void>;
+  public abstract delete(...params: any): Promise<TApiResponseSchema | void>;
   protected abstract mapErrorResponse(
     error: unknown
-  ): void | z.infer<typeof apiResponseSchema>;
+  ): void | TApiResponseSchema;
 }

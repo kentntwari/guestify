@@ -1,57 +1,41 @@
-import { UnkeyApiClient } from "client/unkey";
-import { z } from "zod";
-
 import { NetworkError } from "errors/network";
 import { ApplicationError } from "errors/application";
-import { UserEntity } from "entities/user";
 
 import {
-  UnkeyCreateKeyRequestOptionsSchema,
-  UnkeyCreateKeyResponseSchema,
-} from "utils/schemas.zod";
+  UnkeySecretsFactory,
+  UnkeySecretsFactoryError,
+} from "factory/secrets.unkey";
 
-type TUnkeyCreateKeyRequestOptions = z.infer<
-  typeof UnkeyCreateKeyRequestOptionsSchema
->;
+import { UnkeySecretsDTO } from "dto/secrets.unkey";
 
 export class UnkeySecretService {
-  protected _userEntity: UserEntity;
-  protected _secret_api_id: string;
-  protected _client: UnkeyApiClient | undefined;
-
   constructor() {
     if (!process.env.UNKEY_API_ID)
       throw new UnkeySecretServiceError("Missing API ID secret.");
-
-    this._secret_api_id = process.env.UNKEY_API_ID;
-    this._userEntity = new UserEntity();
   }
 
   public async generate(userId: string, metadata: {} = {}) {
     try {
-      this._client = new UnkeyApiClient("CREATE_KEY");
-      const res = await this._client.create({
-        name: "guestify_" + userId,
-        apiId: this._secret_api_id,
-        externalId: userId,
-        roles: this._userEntity.newUser.roles,
-        permissions: this._userEntity.newUser.permissions,
-        meta: metadata,
-      } satisfies TUnkeyCreateKeyRequestOptions);
-
-      const { success, error, data } =
-        UnkeyCreateKeyResponseSchema.safeParse(res);
-
-      if (!success) throw new UnkeySecretServiceError(error.message, error);
-
-      return data;
+      const key = await UnkeySecretsFactory.exposeCreateKeyApiClient().create(
+        UnkeySecretsDTO.createKey(userId, metadata)
+      );
+      return UnkeySecretsFactory.validateCreatedKey(key);
     } catch (error) {
       switch (true) {
+        case error instanceof ApplicationError:
+          throw error;
+
         case error instanceof NetworkError:
           throw error;
 
         case error instanceof UnkeySecretServiceError:
           throw error;
+
+        case error instanceof UnkeySecretsFactoryError:
+          throw new UnkeySecretServiceError(
+            "Unkey secret generation failed",
+            error
+          );
 
         default:
           throw new ApplicationError(

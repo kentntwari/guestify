@@ -2,7 +2,7 @@ import { ofetch as $fetch, type $Fetch, FetchError } from "ofetch";
 import type { ClerkWebhookEntity } from "entities/webhook.clerk";
 
 import { Base } from "client/_base";
-import { WebhookClerkDTO } from "dto/webhook.clerk";
+import { UserFactory } from "factory/user";
 import { NetworkError } from "errors/network";
 
 export class BackendApiClient extends Base {
@@ -29,10 +29,12 @@ export class BackendApiClient extends Base {
     try {
       return {
         user: async (webhookEntity: ClerkWebhookEntity) => {
-          return await this._httpClient(this._baseUrl + "/api/user", {
-            ...new WebhookClerkDTO(webhookEntity).newUserRequestOptions,
-            headers: this._baseHeaders,
-          });
+          return await this._httpClient(
+            this._baseUrl + "/api/user",
+            UserFactory.userRequestOpts(webhookEntity, {
+              headers: this._baseHeaders,
+            })
+          );
         },
       };
     } catch (error) {

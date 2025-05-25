@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export type TUnkeyCreateKeyRequestOptions = z.infer<
+  typeof UnkeyCreateKeyRequestOptionsSchema
+>;
+
 export const UnkeyCreateKeyRequestOptionsSchema = z.object({
   name: z.string().min(1).startsWith("guestify_"),
   apiId: z.string().includes("api"),

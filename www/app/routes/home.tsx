@@ -51,7 +51,7 @@ export default function Home() {
                     width: "790",
                     height: "624",
                   },
-                  { progressive: "true" },
+                  { progressive: true },
                 ]}
                 alt={kit.alt["landing-page"].header}
                 width="790"
@@ -96,7 +96,7 @@ export default function Home() {
                 {
                   width: "595",
                   height: "848",
-                  progressive: "true",
+                  progressive: true,
                 },
               ]}
               alt={kit.alt["landing-page"].features}

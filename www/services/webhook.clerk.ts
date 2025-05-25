@@ -10,10 +10,11 @@ import {
 
 import { NetworkError } from "errors/network";
 import { ApplicationError } from "errors/application";
+import { ClerkWebhookFactory } from "factory/webhook.clerk";
+import { UserFactory } from "factory/user";
 
 export class ClerkWebhookService {
   protected _webhookEntity: ClerkWebhookEntity;
-  private _backendApiClient: BackendApiClient | undefined;
 
   constructor(webhookEvent: WebhookEvent) {
     this._webhookEntity = new ClerkWebhookEntity(webhookEvent);
@@ -63,20 +64,19 @@ export class ClerkWebhookService {
     uniqueUserKey: UnkeySecretService = new UnkeySecretService()
   ) {
     try {
-      const userData = this._webhookEntity.data.user;
-
-      if (!userData)
-        throw new ClerkWebhookServiceError(
-          "Expected valid user data but received" + typeof userData
-        );
+      const userData = ClerkWebhookFactory.validateWebhookUserData(
+        this._webhookEntity
+      );
 
       const unkey = await uniqueUserKey.generate(userData.id, {
         fullName: `${userData.first_name} ${userData.last_name}`,
         email: userData.email_addresses[0].email_address,
       });
 
-      this._backendApiClient = new BackendApiClient(unkey.key);
-      return await this._backendApiClient.create.user(this._webhookEntity);
+      return await UserFactory.createUser(
+        this._webhookEntity,
+        new BackendApiClient(unkey.key)
+      );
     } catch (error) {
       return this.mapErrors(error);
     }

@@ -2,60 +2,21 @@ type UserRoles = "user" | "admin" | "suspicious" | "banned";
 type UserPermissions = "read" | "update" | "overlord";
 
 export class UserEntity {
-  private readonly _appName: string;
-  private readonly _appRoles: UserRoles = "user";
-  private readonly _appPermissions: UserPermissions = "read";
+  static readonly appName: string = "guestify";
+  static readonly defaultRole: UserRoles = "user";
+  static readonly adminRole: UserRoles = "admin";
+  static readonly bannedRole: UserRoles = "banned";
+  static readonly suspiciousRole: UserRoles = "suspicious";
+  static readonly defaultPermission: UserPermissions = "read";
+  static readonly updatePermission: UserPermissions = "update";
+  static readonly overlordPermission: UserPermissions = "overlord";
 
-  constructor(app: string = "guestify") {
-    this._appName = app;
-  }
-
-  get appName() {
-    return this._appName;
-  }
-
-  get appRoles() {
-    return this._appRoles;
-  }
-
-  get appPermissions() {
-    return this._appPermissions;
-  }
-
-  get userRole(): UserRoles {
-    return "user";
-  }
-
-  get adminRole(): UserRoles {
-    return "admin";
-  }
-
-  get suspiciousRole(): UserRoles {
-    return "suspicious";
-  }
-
-  get bannedRole(): UserRoles {
-    return "banned";
-  }
-
-  get readPermission(): UserPermissions {
-    return "read";
-  }
-
-  get updatePermission(): UserPermissions {
-    return "update";
-  }
-
-  get overlordPermission(): UserPermissions {
-    return "overlord";
-  }
-
-  get newUser() {
+  static newUser() {
     return {
-      roles: [`${this.appName}.${this.userRole}`],
+      roles: [`${UserEntity.appName}.${UserEntity.defaultRole}`],
       permissions: [
-        `${this.appName}.${this.readPermission}`,
-        `${this.appName}.${this.updatePermission}`,
+        `${UserEntity.appName}.${UserEntity.defaultPermission}`,
+        `${UserEntity.appName}.${UserEntity.updatePermission}`,
       ],
     };
   }

@@ -1,4 +1,5 @@
 import type { WebhookEvent, User } from "@clerk/react-router/ssr.server";
+
 import { ApplicationError } from "errors/application";
 
 export class ClerkWebhookEntity {

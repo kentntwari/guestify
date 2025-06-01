@@ -5,18 +5,20 @@ import { NetworkError } from "@/errors/network";
 import { verifyUnkeyResponseSchema } from "@/utils/schemas.zod";
 
 export class UnkeyFactory {
-  static parseAuthorizationHeader(headers: ReturnType<typeof getRequestHeaders>) {
+  static parseAuthorizationHeader(
+    headers: ReturnType<typeof getRequestHeaders>
+  ) {
     const authHeader = headers["authorization"] || headers["Authorization"];
 
     if (!authHeader)
       throw new NetworkError("Authorization header is missing", 401);
 
-    const [scheme, apiKey] = authHeader.split(" ");
+    const [scheme, userKey] = authHeader.split(" ");
 
     if (scheme !== "Bearer")
       throw new NetworkError("Invalid authorization format", 400);
 
-    return new UnkeyEntity("", apiKey, [], []);
+    return new UnkeyEntity("", userKey, [], []);
   }
 
   static validateKey(

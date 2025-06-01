@@ -6,6 +6,6 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
   server: {
-    allowedHosts: ["remark-brandon-media-champagne.trycloudflare.com"],
+    allowedHosts: ["trap-weekend-judicial-residence.trycloudflare.com"],
   },
 });

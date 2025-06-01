@@ -21,15 +21,19 @@ export class UnkeyController extends BaseController {
   public async update() {}
   public async delete() {}
 
-  async verify(apiKey: string) {
+  async verify(userKey: string) {
     try {
-      const res = await this.unkeyService.verifyUnkeyApiKey(apiKey);
+      const res = await this.unkeyService.verifyUnkeyUserKey(userKey);
 
       if (res instanceof UnkeyEntity) {
-        appendHeader(this.nitroEvent, "x-unkey-id", res["id"]);
+        appendHeaders(this.nitroEvent, {
+          "x-user-verified": "true",
+          "x-unkey-id": res["id"],
+        });
         return { success: true, error: null, data: res };
       }
 
+      appendHeader(this.nitroEvent, "x-user-verified", "false");
       return { success: false, error: res.error, data: null };
     } catch (error) {
       return this.mapErrorResponse(error);

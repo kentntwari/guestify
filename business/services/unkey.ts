@@ -10,7 +10,7 @@ export class UnkeyService extends BaseService<UnkeyServiceError> {
     super();
   }
 
-  async verifyUnkeyApiKey(
+  async verifyUnkeyUserKey(
     key: string,
     apiId: string = process.env.UNKEY_API_ID || ""
   ) {

@@ -4,9 +4,9 @@ import { ApplicationError } from "errors/application";
 import { ConfigUtils } from "utils/config";
 
 export class UserFactory {
-  static prepareClient(apiKey: string) {
+  static prepareClient(userKey: string) {
     try {
-      return new BackendApiClient(new ConfigUtils(apiKey));
+      return new BackendApiClient(new ConfigUtils(userKey));
     } catch (error) {
       throw new UserFactoryError(
         "Failed to prepare user factory client",

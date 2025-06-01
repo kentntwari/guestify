@@ -18,10 +18,10 @@ export class UserService extends BaseService {
 
   async requestUserCreationFromWebhook(
     webhookEntity: ClerkWebhookEntity,
-    uniqueApiKey: string
+    uniqueUserKey: string
   ) {
     try {
-      return await UserFactory.prepareClient(uniqueApiKey).create.user(
+      return await UserFactory.prepareClient(uniqueUserKey).create.user(
         ClerkWebhookFactory.validateWebhookUserData(webhookEntity)
       );
     } catch (error) {

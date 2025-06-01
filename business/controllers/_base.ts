@@ -3,8 +3,8 @@ import { H3Event } from "h3";
 import { type TApiResponseSchema } from "@/utils/schemas.zod";
 
 export abstract class Base {
-  protected _nitroEvent: H3Event;
-  protected _httpRequest: H3Event["node"]["req"];
+  private _nitroEvent: H3Event;
+  private _httpRequest: H3Event["node"]["req"];
 
   constructor(event: H3Event) {
     this._nitroEvent = event;

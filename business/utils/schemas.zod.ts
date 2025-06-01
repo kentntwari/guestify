@@ -3,6 +3,9 @@ import { z } from "zod";
 export type TUserSchema = z.infer<typeof userSchema>;
 export type TUserCreateSchema = z.infer<typeof userCreateSchema>;
 export type TApiResponseSchema = z.infer<typeof apiResponseSchema>;
+export type TVerifyUnkeyResponseSchema = z.infer<
+  typeof verifyUnkeyResponseSchema
+>;
 
 export const apiResponseSchema = z.object({
   success: z.boolean(),

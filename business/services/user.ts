@@ -20,14 +20,11 @@ export class UserService extends BaseService<UserServiceError> {
         UserFactory.create(destr(unknownUser))
       );
     } catch (error) {
-      throw this.mapErrorResponse(
-        error,
-        "unknow error occured during user creation"
-      );
+      throw this.mapError(error, "unknow error occured during user creation");
     }
   }
 
-  public mapErrorResponse(
+  public mapError(
     error: unknown,
     errorMessage: string | undefined = undefined
   ) {

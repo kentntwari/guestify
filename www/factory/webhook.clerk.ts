@@ -1,23 +1,27 @@
-import type { WebhookEvent } from "@clerk/react-router/ssr.server";
-
 import { ClerkWebhookEntity } from "entities/webhook.clerk";
+import { UserEntity } from "entities/user";
 
 import { ApplicationError } from "errors/application";
 
 export class ClerkWebhookFactory {
-  static getWebhookEvent(event: WebhookEvent) {
-    return new ClerkWebhookEntity(event);
-  }
-
   static validateWebhookUserData(webhookEntity: ClerkWebhookEntity) {
-    if (!webhookEntity.data.user)
+    let w: ClerkWebhookEntity = webhookEntity;
+
+    if (!w.data.user)
       throw new ClerkWebhookFactoryError(
         ClerkWebhookFactoryError._missingWebhookUserDataMsg,
         {
           user: JSON.stringify(webhookEntity.data.user),
         }
       );
-    return webhookEntity.data.user;
+
+    return new UserEntity(
+      w.data.user.id,
+      w.data.user.first_name ?? "UNSPECIFIED_FIRST_NAME",
+      w.data.user.last_name ?? "UNSPECIFIED_LAST_NAME",
+      w.data.user.email_addresses[0].email_address,
+      w.data.user.image_url ?? "UNSPECIFIED_IMAGE_URL"
+    );
   }
 }
 

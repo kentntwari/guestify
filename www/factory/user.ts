@@ -1,29 +1,18 @@
-import type { FetchOptions } from "ofetch";
-import type { BackendApiClient } from "client/backend";
-import { WebhookClerkDTO } from "dto/webhook.clerk";
-import { ClerkWebhookEntity } from "entities/webhook.clerk";
+import { BackendApiClient } from "client/backend";
+
 import { ApplicationError } from "errors/application";
-import { ClerkWebhookFactory } from "./webhook.clerk";
+import { ConfigUtils } from "utils/config";
 
 export class UserFactory {
-  static userRequestOpts(
-    webhookEntity: ClerkWebhookEntity,
-    opts: FetchOptions
-  ) {
-    return {
-      ...opts,
-      method: "POST",
-      query: WebhookClerkDTO.createNewUserQuery(
-        ClerkWebhookFactory.validateWebhookUserData(webhookEntity)
-      ),
-    } satisfies FetchOptions;
-  }
-
-  static async createUser(
-    webhookEntity: ClerkWebhookEntity,
-    backendApiClient: BackendApiClient
-  ) {
-    return await backendApiClient.create.user(webhookEntity);
+  static prepareClient(apiKey: string) {
+    try {
+      return new BackendApiClient(new ConfigUtils(apiKey));
+    } catch (error) {
+      throw new UserFactoryError(
+        "Failed to prepare user factory client",
+        error
+      );
+    }
   }
 }
 

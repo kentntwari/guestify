@@ -11,6 +11,18 @@ export class UserEntity {
   static readonly updatePermission: UserPermissions = "update";
   static readonly overlordPermission: UserPermissions = "overlord";
 
+  constructor(
+    public id: string,
+    public firstName: string,
+    public lastName: string,
+    public emailAddress: string,
+    public imageUrl: string
+  ) {}
+
+  get fullName() {
+    return `${this.firstName} ${this.lastName}`;
+  }
+
   static newUser() {
     return {
       roles: [`${UserEntity.appName}.${UserEntity.defaultRole}`],

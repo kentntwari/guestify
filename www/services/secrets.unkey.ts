@@ -1,3 +1,5 @@
+import { Base as BaseService } from "services/_base";
+
 import { NetworkError } from "errors/network";
 import { ApplicationError } from "errors/application";
 
@@ -8,8 +10,9 @@ import {
 
 import { UnkeySecretsDTO } from "dto/secrets.unkey";
 
-export class UnkeySecretService {
+export class UnkeySecretService extends BaseService {
   constructor() {
+    super();
     if (!process.env.UNKEY_API_ID)
       throw new UnkeySecretServiceError("Missing API ID secret.");
   }
@@ -21,32 +24,33 @@ export class UnkeySecretService {
       );
       return UnkeySecretsFactory.validateCreatedKey(key);
     } catch (error) {
-      switch (true) {
-        case error instanceof ApplicationError:
-          throw error;
+      throw this.mapError(error, { userId, metadata });
+    }
+  }
 
-        case error instanceof NetworkError:
-          throw error;
+  protected mapError(error: unknown, meta: {} = {}) {
+    switch (true) {
+      case error instanceof ApplicationError:
+        throw error;
 
-        case error instanceof UnkeySecretServiceError:
-          throw error;
+      case error instanceof NetworkError:
+        throw error;
 
-        case error instanceof UnkeySecretsFactoryError:
-          throw new UnkeySecretServiceError(
-            "Unkey secret generation failed",
-            error
-          );
+      case error instanceof UnkeySecretServiceError:
+        throw error;
 
-        default:
-          throw new ApplicationError(
-            "Unexpected error occured in UnkeySecretService class",
-            {
-              userId,
-              error,
-            },
-            "services/unkey.secret"
-          );
-      }
+      case error instanceof UnkeySecretsFactoryError:
+        throw new UnkeySecretServiceError(error.message, error);
+
+      default:
+        throw new ApplicationError(
+          "Unexpected error occured in UnkeySecretService class",
+          {
+            ...meta,
+            error,
+          },
+          "services/unkey.secret"
+        );
     }
   }
 }

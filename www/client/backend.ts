@@ -1,38 +1,30 @@
-import { ofetch as $fetch, type $Fetch, FetchError } from "ofetch";
-import type { ClerkWebhookEntity } from "entities/webhook.clerk";
+import type { TBackendCreateUserApiResponse } from "utils/schemas.zod";
 
-import { Base } from "client/_base";
-import { UserFactory } from "factory/user";
+import { ofetch as $fetch, type $Fetch, FetchError } from "ofetch";
+
+import { Base as BaseClient } from "client/_base";
 import { NetworkError } from "errors/network";
 
-export class BackendApiClient extends Base {
+import { ConfigUtils } from "utils/config";
+import type { UserEntity } from "entities/user";
+
+export class BackendApiClient extends BaseClient {
   protected _httpClient: $Fetch = $fetch;
-  protected _baseHeaders: {
-    Authorization: `Bearer ${string}`;
-    "X-Unkey-Secret": string;
-  };
   protected _baseUrl: string =
     process.env.APP_BACKEND_ENPOINT || "http://localhost:3000";
-  private _apiKey: string;
 
-  constructor(unkeySecretApiKey: string) {
+  constructor(protected config: ConfigUtils) {
     super();
-
-    this._apiKey = unkeySecretApiKey;
-    this._baseHeaders = {
-      Authorization: `Bearer ${this._apiKey}`,
-      "X-Unkey-Secret": this._apiKey,
-    };
   }
 
   get create() {
     try {
       return {
-        user: async (webhookEntity: ClerkWebhookEntity) => {
-          return await this._httpClient(
+        user: async (data: UserEntity) => {
+          return await this._httpClient<TBackendCreateUserApiResponse>(
             this._baseUrl + "/api/user",
-            UserFactory.userRequestOpts(webhookEntity, {
-              headers: this._baseHeaders,
+            ConfigUtils.createUserOpts(data, {
+              headers: ConfigUtils.baseHeaders(this.config),
             })
           );
         },

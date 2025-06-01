@@ -2,12 +2,14 @@ import type { WebhookEvent } from "@clerk/react-router/ssr.server";
 
 import { Webhook } from "svix";
 
-import { Base } from "controllers/_base";
+import { Base as BaseController } from "controllers/_base";
 
 import {
   ClerkWebhookService,
   ClerkWebhookServiceError,
 } from "services/webhook.clerk";
+
+import { ClerkWebhookEntity } from "entities/webhook.clerk";
 
 import { NetworkError } from "errors/network";
 import { ApplicationError } from "errors/application";
@@ -18,7 +20,7 @@ type SvixHeaders = {
   signature: string;
 };
 
-export class ClerkWebhookController extends Base {
+export class ClerkWebhookController extends BaseController {
   private _webhookInstance: Webhook;
   protected _webhookEvent: unknown;
 
@@ -32,44 +34,12 @@ export class ClerkWebhookController extends Base {
   public async handleWebhookEvent() {
     try {
       const event = await this.verifyWebhookEvent();
-      await new ClerkWebhookService(event).processEvent();
+      await new ClerkWebhookService().processWebhook(
+        new ClerkWebhookEntity(event)
+      );
       return new Response("success", { status: 200 });
     } catch (error) {
       return this.mapErrorResponse(error);
-    }
-  }
-
-  protected mapErrorResponse(error: unknown): Response {
-    switch (true) {
-      case error instanceof ClerkWebhookControllerError:
-        return new Response(error.message, {
-          status: 400,
-          statusText: "Controller Error",
-        });
-
-      case error instanceof ClerkWebhookServiceError:
-        return new Response(error.message, {
-          status: 422,
-          statusText: "Service Error",
-        });
-
-      case error instanceof ApplicationError:
-        return new Response(error.message, {
-          status: 500,
-          statusText: "Application Error",
-        });
-
-      case error instanceof NetworkError:
-        return new Response(error.message, {
-          status: 502,
-          statusText: "Network Error",
-        });
-
-      default:
-        return new Response("Internal Server Error", {
-          status: 500,
-          statusText: "Unknown Error",
-        });
     }
   }
 
@@ -111,6 +81,40 @@ export class ClerkWebhookController extends Base {
     )
       return this._webhookEvent as WebhookEvent;
     else throw new ApplicationError("Unable to retrieve webhook event");
+  }
+
+  protected mapErrorResponse(error: unknown): Response {
+    switch (true) {
+      case error instanceof ClerkWebhookControllerError:
+        return new Response(error.message, {
+          status: 400,
+          statusText: "Controller Error",
+        });
+
+      case error instanceof ClerkWebhookServiceError:
+        return new Response(error.message, {
+          status: 422,
+          statusText: "Service Error",
+        });
+
+      case error instanceof ApplicationError:
+        return new Response(error.message, {
+          status: 500,
+          statusText: "Application Error",
+        });
+
+      case error instanceof NetworkError:
+        return new Response(error.message, {
+          status: 502,
+          statusText: "Network Error",
+        });
+
+      default:
+        return new Response("Internal Server Error", {
+          status: 500,
+          statusText: "Unknown Error",
+        });
+    }
   }
 }
 

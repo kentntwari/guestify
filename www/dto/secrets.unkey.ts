@@ -1,4 +1,7 @@
-import type { TUnkeyCreateKeyRequestOptions } from "utils/schemas.zod";
+import type {
+  TUnkeyCreateKeyRequestOptions,
+  TUnkeyCreateKeyResponse,
+} from "utils/schemas.zod";
 
 import { UserEntity } from "entities/user";
 

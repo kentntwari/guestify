@@ -1,17 +1,15 @@
 import type { $Fetch } from "ofetch";
+import type {
+  TUnkeyCreateKeyResponse,
+  TUnkeyErrorResponse,
+  TUnkeyCreateKeyRequestOptions,
+} from "utils/schemas.zod";
 
-import { z } from "zod";
 import { ofetch as $fetch } from "ofetch";
 
-import { Base } from "client/_base";
-import { ApplicationError } from "errors/application";
+import { Base as BaseClient } from "client/_base";
 import { NetworkError } from "errors/network";
-
-import {
-  UnkeyErrorResponseSchema,
-  UnkeyCreateKeyResponseSchema,
-  UnkeyCreateKeyRequestOptionsSchema,
-} from "utils/schemas.zod";
+import { ConfigUtils } from "utils/config";
 
 type TUnkeySecretsControllerAction =
   | "CREATE_KEY"
@@ -19,52 +17,37 @@ type TUnkeySecretsControllerAction =
   | "UPDATE_KEY"
   | "GET_KEY";
 
-type TCreateKeyOpts = z.infer<typeof UnkeyCreateKeyRequestOptionsSchema>;
-type TCreateKeyResult = z.infer<typeof UnkeyCreateKeyResponseSchema>;
-type TErrorResult = z.infer<typeof UnkeyErrorResponseSchema>;
-
-export class UnkeyApiClient extends Base {
-  private _unkeyRootToken: string = process.env.UNKEY_ROOT_KEY || "";
-  private _unkeyUrlParams: string = "";
+export class UnkeyApiClient extends BaseClient {
   protected _httpClient: $Fetch = $fetch;
-  protected _baseHeaders: HeadersInit;
   protected _baseUrl: string = "https://api.unkey.dev/v1";
 
-  constructor(action: TUnkeySecretsControllerAction) {
+  constructor(
+    action: TUnkeySecretsControllerAction,
+    protected config: ConfigUtils
+  ) {
     super();
-
-    if (!process.env.UNKEY_ROOT_KEY)
-      throw new ApplicationError(
-        "Missing root key secret.",
-        {},
-        "client/unkey"
-      );
-
-    this._baseHeaders = {
-      Authorization: `Bearer ${this._unkeyRootToken}`,
-    };
 
     switch (action) {
       case "CREATE_KEY":
-        this._unkeyUrlParams = "/keys.createKey";
+        this._baseUrl = this._baseUrl + "/keys.createKey";
         break;
 
       default:
+        this._baseUrl;
         break;
     }
   }
 
   public get create() {
-    return async (opts: TCreateKeyOpts) => {
-      const requestInfo = {
-        method: "POST",
-        headers: this._baseHeaders,
-        body: { ...opts },
-      };
+    return async (data: TUnkeyCreateKeyRequestOptions) => {
       try {
-        return await this._httpClient<TCreateKeyResult | TErrorResult>(
-          this._baseUrl + this._unkeyUrlParams,
-          requestInfo
+        return await this._httpClient<
+          TUnkeyCreateKeyResponse | TUnkeyErrorResponse
+        >(
+          this._baseUrl,
+          ConfigUtils.createUnkeyOpts(data, {
+            headers: ConfigUtils.baseHeaders(this.config),
+          })
         );
       } catch (error) {
         throw new NetworkError(

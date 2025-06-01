@@ -1,18 +1,15 @@
-import type { ClerkWebhookEntity } from "entities/webhook.clerk";
-import type { FetchOptions } from "ofetch";
+import type { UserEntity } from "entities/user";
 
 export class WebhookClerkDTO {
-  static createNewUserQuery(
-    userData: NonNullable<ClerkWebhookEntity["data"]["user"]>
-  ) {
+  static createNewUserQuery(user: UserEntity) {
     return {
       user: {
-        id: userData.id,
-        firstName: userData.first_name,
-        lastName: userData.last_name,
-        email: userData.email_addresses[0].email_address,
-        imageUrl: userData.has_image === false ? null : userData.image_url,
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.emailAddress,
+        imageUrl: user.imageUrl,
       },
-    } satisfies FetchOptions["query"];
+    };
   }
 }

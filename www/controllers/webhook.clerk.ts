@@ -37,7 +37,7 @@ export class ClerkWebhookController extends BaseController {
       await new ClerkWebhookService().processWebhook(
         new ClerkWebhookEntity(event)
       );
-      return new Response("success", { status: 200 });
+      return new Response("webhook successfully handled", { status: 200 });
     } catch (error) {
       return this.mapErrorResponse(error);
     }

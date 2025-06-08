@@ -1,3 +1,4 @@
+import type { User } from "@clerk/react-router/ssr.server";
 import type { UserEntity } from "entities/user";
 
 export class WebhookClerkDTO {
@@ -11,5 +12,18 @@ export class WebhookClerkDTO {
         imageUrl: user.imageUrl,
       },
     };
+  }
+
+  static updateUserMetadata(
+    userMetadata: Pick<
+      NonNullable<User["raw"]>,
+      "private_metadata" | "public_metadata" | "unsafe_metadata"
+    >
+  ) {
+    return {
+      private_metadata: userMetadata.private_metadata,
+      public_metadata: userMetadata.public_metadata,
+      unsafe_metadata: userMetadata.unsafe_metadata,
+    } satisfies Parameters<typeof this.updateUserMetadata>[0];
   }
 }

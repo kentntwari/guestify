@@ -21,11 +21,13 @@ export class UserService extends BaseService {
     uniqueUserKey: string
   ) {
     try {
-      return await UserFactory.prepareClient(uniqueUserKey).create.user(
-        ClerkWebhookFactory.validateWebhookUserData(webhookEntity)
-      );
+      const res = await UserFactory.exposeBackendApiClient(
+        uniqueUserKey
+      ).create.user(ClerkWebhookFactory.validateWebhookUserData(webhookEntity));
+
+      return res;
     } catch (error) {
-      this.mapError(error);
+      throw this.mapError(error);
     }
   }
 

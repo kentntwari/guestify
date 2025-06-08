@@ -4,7 +4,7 @@ import { ApplicationError } from "errors/application";
 import { ConfigUtils } from "utils/config";
 
 export class UserFactory {
-  static prepareClient(userKey: string) {
+  static exposeBackendApiClient(userKey: string) {
     try {
       return new BackendApiClient(new ConfigUtils(userKey));
     } catch (error) {

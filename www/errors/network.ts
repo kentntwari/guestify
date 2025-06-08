@@ -3,9 +3,10 @@ export class NetworkError extends Error {
   public _origin: unknown;
   public context: {} = {};
   protected _isDevMode: boolean = process.env.NODE_ENV !== "production";
+  static _unexpectedErrorMessage = "An unexpected network error has occurred.";
 
   constructor(
-    message: string = "An unexpected network error has occurred.",
+    message: string = NetworkError._unexpectedErrorMessage,
     context: {} = {},
     origin: unknown
   ) {

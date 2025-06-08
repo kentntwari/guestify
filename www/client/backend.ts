@@ -18,26 +18,9 @@ export class BackendApiClient extends BaseClient {
   }
 
   get create() {
-    try {
-      return {
-        user: async (data: UserEntity) => {
-          return await this._httpClient<TBackendCreateUserApiResponse>(
-            this._baseUrl + "/api/user",
-            ConfigUtils.createUserOpts(data, {
-              headers: ConfigUtils.baseHeaders(this.config),
-            })
-          );
-        },
-      };
-    } catch (error) {
-      throw new NetworkError(
-        error instanceof FetchError
-          ? error.message
-          : "Unexpected network error occurred",
-        { error },
-        origin
-      );
-    }
+    return {
+      user: async (data: UserEntity) => this._createUser(data),
+    };
   }
 
   get update() {
@@ -46,5 +29,34 @@ export class BackendApiClient extends BaseClient {
 
   get delete() {
     return {};
+  }
+
+  private async _createUser(data: Parameters<(typeof this.create)["user"]>[0]) {
+    try {
+      return await this._httpClient<TBackendCreateUserApiResponse>(
+        this._baseUrl + "/api/user",
+        ConfigUtils.createUserOpts(data, {
+          headers: ConfigUtils.baseHeaders(this.config),
+        })
+      );
+    } catch (error) {
+      throw this._formatAndRethrowNetworkError(
+        error,
+        "client/backend/BackendApiClient/_createUser"
+      );
+    }
+  }
+
+  private _formatAndRethrowNetworkError(
+    error: unknown,
+    originContext: `client/backend/BackendApiClient/${string}`
+  ) {
+    throw new NetworkError(
+      error instanceof FetchError
+        ? error.message
+        : NetworkError._unexpectedErrorMessage,
+      { error },
+      originContext
+    );
   }
 }

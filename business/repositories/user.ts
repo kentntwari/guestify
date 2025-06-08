@@ -22,6 +22,9 @@ export class UserRepository {
           lastName: userEntity.lastName,
           imageUrl: userEntity.imageUrl,
         },
+        omit: {
+          id: true,
+        },
       });
     } catch (error) {
       throw new DatabaseError("CREATE", "USER", error);

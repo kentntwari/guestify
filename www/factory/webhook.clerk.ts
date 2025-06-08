@@ -2,8 +2,17 @@ import { ClerkWebhookEntity } from "entities/webhook.clerk";
 import { UserEntity } from "entities/user";
 
 import { ApplicationError } from "errors/application";
+import { ClerkApiClient } from "client/clerk";
+import { ConfigUtils } from "utils/config";
 
 export class ClerkWebhookFactory {
+  static exposeClerkApiClient() {
+    if (!process.env.CLERK_SECRET_KEY) {
+      throw new ClerkWebhookFactoryError("Missing clerk secret key.", {});
+    }
+    return new ClerkApiClient(new ConfigUtils(process.env.CLERK_SECRET_KEY));
+  }
+
   static validateWebhookUserData(webhookEntity: ClerkWebhookEntity) {
     let w: ClerkWebhookEntity = webhookEntity;
 

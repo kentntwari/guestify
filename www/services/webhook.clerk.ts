@@ -26,9 +26,15 @@ export class ClerkWebhookService extends BaseService {
       case "user.created":
         return this.createUserFromWebhook(webhook);
 
+      case "user.updated":
+        return;
+
+      case "user.deleted":
+        return;
+
       default:
         throw new ClerkWebhookServiceError(
-          "Expected valid user webhook event type but received" + webhook.type
+          "Expected valid user webhook event type but received " + webhook.type
         );
     }
   }
@@ -42,12 +48,22 @@ export class ClerkWebhookService extends BaseService {
         email: data.emailAddress,
       });
 
-      return await this.userService.requestUserCreationFromWebhook(
+      const res = await this.userService.requestUserCreationFromWebhook(
         webhook,
         unkey.key
       );
+
+      if (res.success)
+        await ClerkWebhookFactory.exposeClerkApiClient().update.metadata({
+          id: data.id,
+          private_metadata: { key: unkey.key },
+          public_metadata: {},
+          unsafe_metadata: {},
+        });
+
+      return res.data;
     } catch (error) {
-      this.mapError(error);
+      throw this.mapError(error);
     }
   }
 

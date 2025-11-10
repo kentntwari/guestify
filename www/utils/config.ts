@@ -1,9 +1,8 @@
 import type { FetchOptions } from "ofetch";
-import type { User } from "@clerk/react-router/ssr.server";
-import type { UserEntity } from "entities/user";
-import type { TUnkeyCreateKeyRequestOptions } from "./schemas.zod";
+import type { CreateEventDTO } from "_mapper/event";
+import type { IUnkeyCreateKeyDTO } from "_mapper/secrets.unkey";
 
-import { WebhookClerkDTO } from "dto/webhook.clerk";
+import { WebhookClerkMapper } from "_mapper/webhook.clerk";
 
 type BaseHeaders = {
   Authorization: `Bearer ${string}`;
@@ -22,7 +21,7 @@ export class ConfigUtils {
     };
   }
 
-  static createUnkeyOpts(data: TUnkeyCreateKeyRequestOptions, opts: IOpts) {
+  static createUnkeyOpts(data: IUnkeyCreateKeyDTO, opts: IOpts) {
     return {
       ...opts,
       method: "POST",
@@ -30,22 +29,33 @@ export class ConfigUtils {
     };
   }
 
-  static createUserOpts(user: UserEntity, opts: IOpts) {
+  static createUserOpts(
+    user: ReturnType<(typeof WebhookClerkMapper)["toCreateUser"]>,
+    opts: IOpts
+  ) {
     return {
       ...opts,
       method: "POST",
-      query: WebhookClerkDTO.createNewUserQuery(user),
+      query: { ...user },
     };
   }
 
   static updateClerkUserMetadataOpts(
-    user: ReturnType<(typeof WebhookClerkDTO)["updateUserMetadata"]>,
+    user: ReturnType<(typeof WebhookClerkMapper)["toUpdateUserMetadata"]>,
     opts: IOpts
   ) {
     return {
       ...opts,
       method: "PATCH",
       body: { ...user },
+    };
+  }
+
+  static createEventOpts(data: CreateEventDTO, opts: IOpts) {
+    return {
+      ...opts,
+      method: "POST",
+      body: { ...data },
     };
   }
 }

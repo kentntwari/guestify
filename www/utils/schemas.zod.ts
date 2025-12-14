@@ -39,6 +39,7 @@ export const BackendCreateUserApiResponseSchema = z.object({
   error: z.string().nullable(),
   data: z
     .object({
+      id: z.string(),
       email: z.string().email(),
       firstName: z.string(),
       lastName: z.string(),

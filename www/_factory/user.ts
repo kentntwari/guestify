@@ -1,37 +1,30 @@
-import { BackendApiClient } from "_client/backend";
-import { UserEntity } from "_entities/user";
+import { BackendApiClientProvider } from "_client/backend-provider";
+import { UserMapper, UserMapperError } from "_mapper/user";
 
-import { ApplicationError } from "errors/application";
-import { ConfigUtils } from "utils/config";
-
-import { BackendCreateUserApiResponseSchema } from "utils/schemas.zod";
-
+/**
+ * Factory for user-related operations.
+ * Delegates to appropriate providers and mappers.
+ */
 export class UserFactory {
+  /**
+   * Creates a BackendApiClient instance.
+   * @param userKey - The authentication key for the backend API
+   * @returns A configured BackendApiClient instance
+   */
   static toBackendApiClient(userKey: string) {
-    return new BackendApiClient(new ConfigUtils(userKey));
+    return BackendApiClientProvider.create(userKey);
   }
 
+  /**
+   * Converts backend API response data to a UserEntity.
+   * @param rawUser - The backend API response (full response or data object)
+   * @returns A UserEntity instance
+   * @throws {UserMapperError} If validation fails
+   */
   static toEntity(rawUser: unknown) {
-    console.log("returned rawUser:", rawUser);
-    const { success, error, data } = BackendCreateUserApiResponseSchema.pick({
-      data: true,
-    }).shape.data.safeParse(rawUser);
-    if (!success) throw new UserFactoryError(error.message, error);
-    return new UserEntity(
-      data.id,
-      data.email,
-      data.firstName,
-      data.lastName,
-      data.imageUrl ?? ""
-    );
+    return UserMapper.fromBackendResponse(rawUser);
   }
 }
 
-export class UserFactoryError extends ApplicationError {
-  constructor(message: string, error: unknown) {
-    super(message, { error }, "factory/user");
-
-    this.name = "USER FACTORY ERROR";
-    console.log(this);
-  }
-}
+// Re-export UserMapperError as UserFactoryError for backward compatibility
+export { UserMapperError as UserFactoryError };

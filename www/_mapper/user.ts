@@ -42,10 +42,7 @@ export class UserMapper extends BaseMapper {
     }
 
     if (!result.data.data) {
-      throw new UserMapperError(
-        "Backend API response data is null",
-        undefined
-      );
+      throw new UserMapperError("Backend API response data is null");
     }
 
     return this.fromBackendDto(result.data.data);

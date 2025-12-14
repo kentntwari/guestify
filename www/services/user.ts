@@ -55,8 +55,7 @@ export class UserService extends BaseService {
 export class UserServiceError extends ApplicationError {
   constructor(message: string, rawError: unknown = null) {
     super(message);
-    this.name = "CLERK SERVICE ERROR";
+    this.name = "USER SERVICE ERROR";
     if (rawError) this.context = this._isDevMode ? rawError : {};
-    console.log(this);
   }
 }

@@ -1,6 +1,6 @@
 import type { Route } from "./+types/_ressource.webhook.clerk";
 
-import { ClerkWebhookController } from "controllers/webhook.clerk";
+import { ClerkWebhookController } from "_controllers/webhook.clerk";
 
 export async function loader({ params, context, request }: Route.LoaderArgs) {
   return {};
